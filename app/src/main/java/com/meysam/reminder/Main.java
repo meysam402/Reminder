@@ -40,18 +40,13 @@ public class Main extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
-
         String[] days = new String[]{"شنبه", "یکشنبه", "دوشنبه", "سه شنبه", "چهارشنبه", "پنج شنبه", "جمعه"};
-
         final Hashtable choices = new Hashtable();
         for(int i=0; i<7; i++)
             choices.put(days[i], false);
 
-
         final ListView listView = (ListView) findViewById(R.id.listOfDays);
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
-
         ArrayAdapter<String> adapter = new ArrayAdapter<>(Main.this,
                 android.R.layout.select_dialog_multichoice, android.R.id.text1, days);
         listView.setAdapter(adapter);
@@ -83,27 +78,33 @@ public class Main extends Activity {
                     if ((boolean) choices.get(key))
                         finalChoices[index++] = key;
                 }
-
-                Intent intent = new Intent(Main.this, AlarmService.class);
-                startService(intent);
+                stopAlarm();
+                activateAlarm();
+                //Intent intent = new Intent(Main.this, AlarmService.class);
+                //startService(intent);
             }
         });
 
-        setTimes();
+        activateAlarm();
     }
 
-    private void setTimes(){
+    private void activateAlarm(){
         Intent intent = new Intent(Main.this, AlarmService.class);
-        PendingIntent pending = PendingIntent.getBroadcast(Main.this, 0, intent, 0);
+        PendingIntent pending = PendingIntent.getService(Main.this, 0, intent, 0);
         AlarmManager alarmManager = (AlarmManager)getSystemService(ALARM_SERVICE);
         Calendar calendar = Calendar.getInstance();
-        calendar.set(Calendar.HOUR_OF_DAY, 18);
-        calendar.set(Calendar.MINUTE, 0);
-        calendar.set(Calendar.SECOND, 0);
-        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), 24*60*60*1000, pending);
+        calendar.set(Calendar.HOUR_OF_DAY, 14);
+        calendar.set(Calendar.MINUTE, 54);
+        calendar.set(Calendar.SECOND, 1);
+        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), 24 * 60 * 60 * 1000, pending);
     }
 
-
+    private void stopAlarm(){
+        Intent intent = new Intent(Main.this, AlarmService.class);
+        PendingIntent pending = PendingIntent.getService(Main.this, 0, intent , 0);
+        AlarmManager alarmManager = (AlarmManager)getSystemService(ALARM_SERVICE);
+        alarmManager.cancel(pending);
+    }
 
 
     @Override
