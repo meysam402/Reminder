@@ -2,36 +2,21 @@ package com.meysam.reminder;
 
 import android.app.Activity;
 import android.app.AlarmManager;
-import android.app.IntentService;
 import android.app.PendingIntent;
-import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
-import android.nfc.Tag;
-import android.os.IBinder;
-import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
-
-import org.apache.commons.logging.Log;
-
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Calendar;
-import java.util.Enumeration;
 import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 
 public class Main extends Activity {
@@ -40,7 +25,8 @@ public class Main extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        String[] days = new String[]{"شنبه", "یکشنبه", "دوشنبه", "سه شنبه", "چهارشنبه", "پنج شنبه", "جمعه"};
+        final String[] days = new String[]{"شنبه", "یکشنبه", "دوشنبه", "سه شنبه", "چهارشنبه", "پنج شنبه", "جمعه"};
+        final boolean[] daysBinary = new boolean[]{false, false, false, false, false, false, false};
         final Hashtable choices = new Hashtable();
         for(int i=0; i<7; i++)
             choices.put(days[i], false);
@@ -57,7 +43,10 @@ public class Main extends Activity {
                                     int position, long id) {
 
                 String itemValue = (String) listView.getItemAtPosition(position);
-                choices.put(itemValue, !(boolean) choices.get(itemValue));
+                for(int i=0; i<7; i++)
+                    if(days[i].equals(itemValue))
+                        daysBinary[i] = !daysBinary[i];
+                //choices.put(itemValue, !(boolean) choices.get(itemValue));
             }
 
         });
@@ -66,20 +55,27 @@ public class Main extends Activity {
         done.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                /*
                 Set<String> keys = choices.keySet();
                 int length = 0;
                 for (String key : keys) {
                     if ((boolean) choices.get(key))
                         length++;
                 }
+
                 String[] finalChoices = new String[length];
                 int index = 0;
                 for (String key : keys) {
                     if ((boolean) choices.get(key))
                         finalChoices[index++] = key;
                 }
+                */
+                //chosenDays = finalChoices;
                 stopAlarm();
+                writeToFile(daysBinary);
                 activateAlarm();
+                Toast.makeText(Main.this, "ثبت شد", Toast.LENGTH_SHORT).show();
+                //activateAlarm();
                 //Intent intent = new Intent(Main.this, AlarmService.class);
                 //startService(intent);
             }
@@ -93,19 +89,30 @@ public class Main extends Activity {
         PendingIntent pending = PendingIntent.getService(Main.this, 0, intent, 0);
         AlarmManager alarmManager = (AlarmManager)getSystemService(ALARM_SERVICE);
         Calendar calendar = Calendar.getInstance();
-        calendar.set(Calendar.HOUR_OF_DAY, 14);
-        calendar.set(Calendar.MINUTE, 54);
-        calendar.set(Calendar.SECOND, 1);
+        calendar.set(Calendar.HOUR_OF_DAY, 18);
+        calendar.set(Calendar.MINUTE, 0);
+        //calendar.set(Calendar.SECOND, 1);
         alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), 24 * 60 * 60 * 1000, pending);
     }
 
     private void stopAlarm(){
-        Intent intent = new Intent(Main.this, AlarmService.class);
-        PendingIntent pending = PendingIntent.getService(Main.this, 0, intent , 0);
-        AlarmManager alarmManager = (AlarmManager)getSystemService(ALARM_SERVICE);
-        alarmManager.cancel(pending);
+        stopService(new Intent(this, AlarmService.class));
     }
 
+    private void writeToFile(boolean[] days){
+        String content="0000000";
+        for(int i=0; i<days.length; i++)
+            if(days[i])
+                content = content.substring(0,i) + '1' + content.substring(i+1);
+        try {
+            FileOutputStream fOut = openFileOutput("days.txt", MODE_PRIVATE);//In memory (Assets folder is read-only!)
+            fOut.write(content.getBytes());
+            fOut.close();
+        }
+        catch (IOException e) {
+            Toast.makeText(this, "Error: file corrupted!", Toast.LENGTH_LONG).show();
+        }
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
